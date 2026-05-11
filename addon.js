@@ -42,6 +42,12 @@ const manifest = {
             name: "MalluFlix OTT Released",
             extra: [{ name: "search" }, { name: "skip" }]
         },
+        {
+            type: "movie",
+            id: "malluflix_future",
+            name: "MalluFlix Future Releases",
+            extra: [{ name: "search" }, { name: "skip" }]
+        },
         ...Object.keys(GENRES).map(name => ({
             type: "movie",
             id: `malluflix_genre_${name.toLowerCase().replace(/\s+/g, '_')}`,
@@ -91,7 +97,7 @@ async function tmdbToImdb(tmdbId) {
 /* Malayalam Catalog */
 builder.defineCatalogHandler(async ({ type, id, extra }) => {
     const isGenreCatalog = id.startsWith("malluflix_genre_");
-    if (type !== "movie" || (!["malluflix_catalog", "malluflix_ott"].includes(id) && !isGenreCatalog)) return { metas: [] };
+    if (type !== "movie" || (!["malluflix_catalog", "malluflix_ott", "malluflix_future"].includes(id) && !isGenreCatalog)) return { metas: [] };
 
     const skip = extra?.skip ? parseInt(extra.skip) : 0;
     const page = Math.round(skip / 20) + 1;
@@ -109,6 +115,10 @@ builder.defineCatalogHandler(async ({ type, id, extra }) => {
         params.with_release_type = "4|5"; // 4 = Digital, 5 = Physical
         params.region = "IN";
         params.sort_by = "release_date.desc";
+    } else if (id === "malluflix_future") {
+        // Filter for Future releases (greater than today)
+        params["primary_release_date.gte"] = today;
+        params.sort_by = "primary_release_date.asc"; // Show soonest releases first
     } else if (isGenreCatalog) {
         // Extract genre name from ID and find corresponding ID
         const genreName = id.replace("malluflix_genre_", "");
