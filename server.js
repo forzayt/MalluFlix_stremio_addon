@@ -7,16 +7,38 @@ const fs = require("fs");
 const app = express();
 const port = process.env.PORT || 7000;
 const URLS_PATH = path.join(__dirname, "urls.json");
+const CATALOG_NAMES = addonInterface.CATALOG_NAMES;
+const CATALOG_BY_LOWER = new Map(CATALOG_NAMES.map((name) => [name.toLowerCase(), name]));
 
 app.use(express.json({ limit: "16kb" }));
+
+// Maps names loosely (any casing, unknown ones dropped) while keeping the given order
+function toCatalogSelection(values) {
+    const names = [];
+
+    for (const value of values) {
+        if (typeof value !== "string") continue;
+        const name = CATALOG_BY_LOWER.get(value.trim().toLowerCase());
+        if (name && !names.includes(name)) names.push(name);
+    }
+
+    return names;
+}
 
 function readConfig() {
     try {
         const parsed = JSON.parse(fs.readFileSync(URLS_PATH, "utf8"));
-        return { url: typeof parsed.url === "string" ? parsed.url : "" };
+        return {
+            url: typeof parsed.url === "string" ? parsed.url : "",
+            genres: Array.isArray(parsed.genres) ? toCatalogSelection(parsed.genres) : []
+        };
     } catch (err) {
-        return { url: "" };
+        return { url: "", genres: [] };
     }
+}
+
+function writeConfig(config) {
+    fs.writeFileSync(URLS_PATH, JSON.stringify(config, null, 4) + "\n", "utf8");
 }
 
 // Returns the trimmed URL, "" to clear it, or null when it is not a valid http(s) URL
@@ -35,9 +57,38 @@ function normalizeUrl(value) {
     return trimmed;
 }
 
-// Configuration page for the direct stream URL
+// Catalog selection from the query string, falling back to the saved configuration
+function resolveCatalogSelection(param) {
+    if (param === undefined) {
+        const saved = readConfig().genres;
+        return saved.length ? saved : null;
+    }
+
+    const names = toCatalogSelection(String(param).split(","));
+    return names.length ? names : null;
+}
+
+// Manifest route that exposes only the selected catalogs
+app.get("/manifest.json", (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Cache-Control", "no-store");
+
+    const selection = resolveCatalogSelection(req.query.genres);
+
+    if (!selection) {
+        return res.json(addonInterface.manifest);
+    }
+
+    res.json(addonInterface.buildManifest(selection));
+});
+
+// Configuration page for catalogs and the direct stream URL
 app.get("/configure", (req, res) => {
     res.sendFile(path.join(__dirname, "configure.html"));
+});
+
+app.get("/api/catalogs", (req, res) => {
+    res.json(CATALOG_NAMES);
 });
 
 app.get("/api/config", (req, res) => {
@@ -45,15 +96,27 @@ app.get("/api/config", (req, res) => {
 });
 
 app.post("/api/config", (req, res) => {
-    const url = normalizeUrl(req.body && req.body.url);
+    const body = req.body || {};
+    const current = readConfig();
 
-    if (url === null) {
-        return res.status(400).json({ error: "Enter a valid http:// or https:// stream URL." });
+    let url = current.url;
+    if (body.url !== undefined) {
+        const normalized = normalizeUrl(body.url);
+        if (normalized === null) {
+            return res.status(400).json({ error: "Enter a valid http:// or https:// stream URL." });
+        }
+        url = normalized;
     }
 
+    if (body.genres !== undefined && !Array.isArray(body.genres)) {
+        return res.status(400).json({ error: "Genres must be a list of supported catalog names." });
+    }
+
+    const genres = body.genres === undefined ? current.genres : toCatalogSelection(body.genres);
+
     try {
-        fs.writeFileSync(URLS_PATH, JSON.stringify({ url }, null, 4) + "\n", "utf8");
-        res.json({ url });
+        writeConfig({ url, genres });
+        res.json({ url, genres });
     } catch (err) {
         console.error("Error writing urls.json", err);
         res.status(500).json({ error: "Could not save the configuration on the server." });

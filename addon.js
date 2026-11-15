@@ -45,48 +45,96 @@ function getStreamUrl() {
 
 const hasUrl = getStreamUrl() !== "";
 
-const manifest = {
-    id: "org.mallu.flix",
-    version: "3.0.0",
-    name: "MalluFlix",
-    description: "Malayalam movie catalog using TMDB discovery + Cinemeta compatibility",
-    logo: "https://forzayt.github.io/MalluFlix_stremio_addon/images/logo.jpg",
-    resources: ["catalog", "meta", "stream"],
-    types: ["movie"],
-    catalogs: [
-        {
+const BASE_CATALOG_DEFS = [
+    {
+        name: "New Releases",
+        catalog: {
             type: "movie",
             id: "malluflix_catalog",
             name: "MalluFlix New Releases",
             extra: [{ name: "search" }, { name: "skip" }]
-        },
-        {
+        }
+    },
+    {
+        name: "OTT Released",
+        catalog: {
             type: "movie",
             id: "malluflix_ott",
             name: "MalluFlix OTT Released",
             extra: [{ name: "search" }, { name: "skip" }]
-        },
-        {
+        }
+    },
+    {
+        name: "Future Releases",
+        catalog: {
             type: "movie",
             id: "malluflix_future",
             name: "MalluFlix Future Releases",
             extra: [{ name: "search" }, { name: "skip" }]
-        },
-        ...Object.keys(GENRES).map(name => ({
-            type: "movie",
-            id: `malluflix_genre_${name.toLowerCase().replace(/\s+/g, '_')}`,
-            name: `MalluFlix ${name}`,
-            extra: [{ name: "search" }, { name: "skip" }]
-        })),
-        ...(hasUrl ? [{
-            type: "movie",
-            id: "malluflix_streams",
-            name: "MalluFlix Direct Streams",
-            extra: [{ name: "search" }, { name: "skip" }]
-        }] : [])
-    ],
-    idPrefixes: ["tt", "malluflix_"]
+        }
+    }
+];
+
+const BASE_CATALOGS = BASE_CATALOG_DEFS.map(def => def.catalog);
+const BASE_CATALOG_BY_NAME = new Map(BASE_CATALOG_DEFS.map(def => [def.name, def.catalog]));
+
+// Everything the manifest can expose as a catalog, in default order
+const CATALOG_NAMES = [
+    ...BASE_CATALOG_DEFS.map(def => def.name),
+    ...Object.keys(GENRES)
+];
+
+const STREAMS_CATALOG = {
+    type: "movie",
+    id: "malluflix_streams",
+    name: "MalluFlix Direct Streams",
+    extra: [{ name: "search" }, { name: "skip" }]
 };
+
+function genreCatalog(name) {
+    return {
+        type: "movie",
+        id: `malluflix_genre_${name.toLowerCase().replace(/\s+/g, '_')}`,
+        name: `MalluFlix ${name}`,
+        extra: [{ name: "search" }, { name: "skip" }]
+    };
+}
+
+function catalogForName(name) {
+    if (BASE_CATALOG_BY_NAME.has(name)) return BASE_CATALOG_BY_NAME.get(name);
+    if (Object.prototype.hasOwnProperty.call(GENRES, name)) return genreCatalog(name);
+    return null;
+}
+
+/*
+ * Builds the manifest. With a selection only those catalogs are exposed, in the
+ * given order; without one the default catalog list is used.
+ */
+function buildManifest(catalogNames) {
+    const hasSelection = Array.isArray(catalogNames) && catalogNames.length > 0;
+
+    const catalogs = hasSelection
+        ? catalogNames.map(catalogForName).filter(Boolean)
+        : [
+            ...BASE_CATALOGS,
+            ...Object.keys(GENRES).map(genreCatalog),
+            ...(hasUrl ? [STREAMS_CATALOG] : [])
+        ];
+
+    return {
+        id: "org.mallu.flix",
+        version: "3.0.0",
+        name: "MalluFlix",
+        description: "Malayalam movie catalog using TMDB discovery + Cinemeta compatibility",
+        logo: "https://forzayt.github.io/MalluFlix_stremio_addon/images/logo.jpg",
+        resources: ["catalog", "meta", "stream"],
+        types: ["movie"],
+        catalogs,
+        idPrefixes: ["tt", "malluflix_"]
+    };
+}
+
+const manifest = buildManifest();
 
 const builder = new addonBuilder(manifest);
 
@@ -253,4 +301,9 @@ builder.defineStreamHandler(async ({ type, id }) => {
     return { streams: [] };
 });
 
-module.exports = builder.getInterface();
+const addonInterface = builder.getInterface();
+addonInterface.buildManifest = buildManifest;
+addonInterface.GENRES = GENRES;
+addonInterface.CATALOG_NAMES = CATALOG_NAMES;
+
+module.exports = addonInterface;

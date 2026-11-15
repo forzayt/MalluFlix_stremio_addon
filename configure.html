@@ -31,7 +31,7 @@
 
     .back {
       width: 100%;
-      max-width: 560px;
+      max-width: 620px;
       font-size: 14px;
       font-weight: 600;
       letter-spacing: 0.02em;
@@ -46,7 +46,7 @@
 
     .card {
       width: 100%;
-      max-width: 560px;
+      max-width: 620px;
       padding: 36px 32px;
       border: 2px solid #0f172a;
       border-radius: 26px;
@@ -62,15 +62,27 @@
     }
 
     .subtitle {
-      margin: 0 0 28px;
+      margin: 0 0 26px;
       font-size: 15px;
       line-height: 1.6;
       color: #64748b;
     }
 
-    label {
-      display: block;
-      margin-bottom: 8px;
+    .section + .section {
+      margin-top: 28px;
+      padding-top: 24px;
+      border-top: 1px dashed #cbd5e1;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    label.title {
       font-size: 12px;
       font-weight: 700;
       letter-spacing: 0.08em;
@@ -78,7 +90,82 @@
       color: #475569;
     }
 
-    input[type="url"] {
+    .linkbtn {
+      padding: 0;
+      border: 0;
+      background: none;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #0288d1;
+      cursor: pointer;
+    }
+
+    .linkbtn:hover {
+      color: #01579b;
+      text-decoration: underline;
+    }
+
+    .genres {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .genre {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #475569;
+      cursor: grab;
+      user-select: none;
+      transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+    }
+
+    .genre:hover {
+      border-color: #94a3b8;
+    }
+
+    .genre:has(input:checked) {
+      border-color: #0f172a;
+      background-color: #fffbe6;
+      color: #0f172a;
+      font-weight: 600;
+    }
+
+    .genre.dragging {
+      opacity: 0.45;
+      border-style: dashed;
+      cursor: grabbing;
+    }
+
+    .grip {
+      color: #cbd5e1;
+      font-size: 16px;
+      line-height: 1;
+      cursor: grab;
+    }
+
+    .genre:has(input:checked) .grip {
+      color: #94a3b8;
+    }
+
+    .genre input {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: #fdd835;
+      cursor: pointer;
+    }
+
+    input[type="text"] {
       width: 100%;
       padding: 14px 16px;
       border: 2px solid #0f172a;
@@ -91,16 +178,22 @@
       transition: box-shadow 0.2s ease;
     }
 
-    input[type="url"]::placeholder {
+    input[type="text"]::placeholder {
       color: #94a3b8;
     }
 
-    input[type="url"]:focus {
+    input[type="text"]:focus {
       box-shadow: 0 0 0 4px rgba(253, 216, 53, 0.45);
     }
 
+    input[readonly] {
+      background: #f8fafc;
+      color: #334155;
+      font-size: 13px;
+    }
+
     .hint {
-      margin: 10px 0 26px;
+      margin: 10px 0 0;
       font-size: 13px;
       line-height: 1.5;
       color: #94a3b8;
@@ -109,11 +202,12 @@
     .actions {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
       flex-wrap: wrap;
+      margin-top: 16px;
     }
 
-    button {
+    button.primary {
       padding: 12px 22px;
       border: 2px solid #0f172a;
       border-radius: 50px;
@@ -125,36 +219,42 @@
       letter-spacing: 0.06em;
       text-transform: uppercase;
       cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
     }
 
-    button:hover:not(:disabled) {
+    button.primary:hover:not(:disabled) {
       box-shadow: 0 4px 0 #0f172a;
       transform: translateY(-2px);
     }
 
-    button:active:not(:disabled) {
+    button.primary:active:not(:disabled) {
       transform: translateY(1px);
       box-shadow: none;
     }
 
-    button:disabled {
-      opacity: 0.6;
-      cursor: progress;
+    button.primary:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
     }
 
-    #status {
-      font-size: 14px;
+    .status {
+      font-size: 13px;
       font-weight: 500;
       line-height: 1.4;
     }
 
-    #status.ok {
+    .status.ok {
       color: #15803d;
     }
 
-    #status.error {
+    .status.error {
       color: #b91c1c;
+    }
+
+    @media (max-width: 520px) {
+      .card {
+        padding: 28px 22px;
+      }
     }
   </style>
 </head>
@@ -165,74 +265,232 @@
   <div class="card">
     <h1>Configure</h1>
     <p class="subtitle">
-      Set the stream URL used by the <strong>MalluFlix Direct Streams</strong> catalog.
+      Pick the catalogs you want, drag them into the order you like, then copy your manifest link and
+      install it in Stremio. Only the selected catalogs will appear.
     </p>
 
-    <form id="configForm" novalidate>
-      <label for="streamUrl">Direct stream URL</label>
-      <input id="streamUrl" name="streamUrl" type="url" inputmode="url" autocomplete="off" spellcheck="false"
-        placeholder="https://example.com/movie.mkv" />
-      <p class="hint">Leave empty and save to disable the direct stream. Streams update immediately; if the
-        Direct Streams catalog was not visible before, restart the addon once.</p>
-
-      <div class="actions">
-        <button id="saveBtn" type="submit">Save</button>
-        <span id="status" role="status" aria-live="polite"></span>
+    <div class="section">
+      <div class="section-head">
+        <label class="title">Catalogs</label>
+        <div class="actions" style="margin-top: 0; gap: 16px;">
+          <button id="selectAll" class="linkbtn" type="button">Select all</button>
+          <button id="selectNone" class="linkbtn" type="button">Clear</button>
+        </div>
       </div>
-    </form>
+      <div id="genreList" class="genres">
+        <span class="hint">Loading catalogs…</span>
+      </div>
+      <p class="hint">
+        Includes the New Releases, OTT Released and Future Releases catalogs plus every genre defined in the
+        addon code. Drag a row to change the order shown in Stremio; new ones show up here automatically.
+      </p>
+    </div>
+
+    <div class="section">
+      <label class="title" for="manifestUrl">Manifest URL</label>
+      <div style="margin-top: 12px;">
+        <input id="manifestUrl" type="text" readonly spellcheck="false" />
+      </div>
+      <div class="actions">
+        <button id="copyManifest" class="primary" type="button" disabled>Copy manifest</button>
+        <span id="copyStatus" class="status" role="status" aria-live="polite"></span>
+      </div>
+    </div>
   </div>
 
   <script>
     (() => {
-      const form = document.getElementById("configForm");
-      const input = document.getElementById("streamUrl");
-      const saveBtn = document.getElementById("saveBtn");
-      const status = document.getElementById("status");
+      const genreList = document.getElementById("genreList");
+      const manifestInput = document.getElementById("manifestUrl");
+      const copyBtn = document.getElementById("copyManifest");
+      const copyStatus = document.getElementById("copyStatus");
 
-      const setStatus = (message, state) => {
-        status.textContent = message;
-        status.className = state || "";
+      let savedGenres = [];
+
+      const setStatus = (element, message, state) => {
+        element.textContent = message;
+        element.className = "status" + (state ? " " + state : "");
       };
 
-      fetch("/api/config")
-        .then((response) => (response.ok ? response.json() : Promise.reject()))
-        .then((config) => {
-          input.value = typeof config.url === "string" ? config.url : "";
-        })
-        .catch(() => setStatus("Could not load the current configuration.", "error"));
+      const selectedGenres = () =>
+        Array.from(genreList.querySelectorAll("input[type=checkbox]"))
+          .filter((input) => input.checked)
+          .map((input) => input.value);
 
-      form.addEventListener("submit", async (event) => {
+      const buildManifestUrl = (genres) => {
+        const base = window.location.origin + "/manifest.json";
+        if (!genres.length) return base;
+        return base + "?genres=" + genres.map(encodeURIComponent).join(",");
+      };
+
+      const refreshManifest = () => {
+        const genres = selectedGenres();
+        manifestInput.value = buildManifestUrl(genres);
+        copyBtn.disabled = genres.length === 0;
+
+        if (!genres.length) {
+          setStatus(copyStatus, "Select at least one catalog to build a manifest.", "error");
+        } else {
+          setStatus(copyStatus, "");
+        }
+      };
+
+      const copyText = async (text) => {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch (error) {
+          try {
+            manifestInput.removeAttribute("readonly");
+            manifestInput.select();
+            const copied = document.execCommand("copy");
+            manifestInput.setAttribute("readonly", "");
+            window.getSelection().removeAllRanges();
+            return copied;
+          } catch (fallbackError) {
+            return false;
+          }
+        }
+      };
+
+      const saveConfig = async (payload) => {
+        const response = await fetch("/api/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(result.error || "Could not save the configuration.");
+        }
+
+        return result;
+      };
+
+      const renderGenres = (catalogs) => {
+        genreList.innerHTML = "";
+
+        // Keep the saved order first so the manifest order survives a reload
+        const ordered = [
+          ...savedGenres.filter((name) => catalogs.includes(name)),
+          ...catalogs.filter((name) => !savedGenres.includes(name))
+        ];
+
+        ordered.forEach((name) => {
+          const label = document.createElement("label");
+          label.className = "genre";
+          label.draggable = true;
+
+          const grip = document.createElement("span");
+          grip.className = "grip";
+          grip.textContent = "⠿";
+          grip.setAttribute("aria-hidden", "true");
+
+          const input = document.createElement("input");
+          input.type = "checkbox";
+          input.name = "genre";
+          input.value = name;
+          input.checked = savedGenres.length === 0 || savedGenres.includes(name);
+
+          const text = document.createElement("span");
+          text.textContent = name;
+
+          label.append(grip, input, text);
+          genreList.append(label);
+        });
+      };
+
+      genreList.addEventListener("change", refreshManifest);
+
+      let draggedRow = null;
+
+      genreList.addEventListener("dragstart", (event) => {
+        const row = event.target.closest(".genre");
+        if (!row) return;
+
+        draggedRow = row;
+        row.classList.add("dragging");
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", row.querySelector("input").value);
+      });
+
+      genreList.addEventListener("dragover", (event) => {
+        if (!draggedRow) return;
         event.preventDefault();
-        const url = input.value.trim();
+        event.dataTransfer.dropEffect = "move";
 
-        if (url && !/^https?:\/\//i.test(url)) {
-          setStatus("The URL must start with http:// or https://", "error");
+        const target = event.target.closest(".genre");
+        if (!target || target === draggedRow) return;
+
+        const rect = target.getBoundingClientRect();
+        const insertAfter = event.clientY - rect.top > rect.height / 2;
+        genreList.insertBefore(draggedRow, insertAfter ? target.nextSibling : target);
+      });
+
+      genreList.addEventListener("drop", (event) => {
+        if (draggedRow) event.preventDefault();
+      });
+
+      genreList.addEventListener("dragend", () => {
+        if (!draggedRow) return;
+        draggedRow.classList.remove("dragging");
+        draggedRow = null;
+        refreshManifest();
+      });
+
+      document.getElementById("selectAll").addEventListener("click", () => {
+        genreList.querySelectorAll("input[type=checkbox]").forEach((input) => {
+          input.checked = true;
+        });
+        refreshManifest();
+      });
+
+      document.getElementById("selectNone").addEventListener("click", () => {
+        genreList.querySelectorAll("input[type=checkbox]").forEach((input) => {
+          input.checked = false;
+        });
+        refreshManifest();
+      });
+
+      copyBtn.addEventListener("click", async () => {
+        const genres = selectedGenres();
+        if (!genres.length) {
+          setStatus(copyStatus, "Select at least one catalog to build a manifest.", "error");
           return;
         }
 
-        saveBtn.disabled = true;
-        setStatus("Saving…");
+        copyBtn.disabled = true;
 
         try {
-          const response = await fetch("/api/config", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url })
-          });
-          const result = await response.json().catch(() => ({}));
-
-          if (!response.ok) {
-            throw new Error(result.error || "Could not save the configuration.");
-          }
-
-          input.value = result.url || "";
-          setStatus(result.url ? "Saved. The direct stream is now live." : "Saved. Direct stream disabled.", "ok");
+          // Keep the saved configuration in sync so /manifest.json matches the copied link
+          await saveConfig({ genres });
+          const copied = await copyText(manifestInput.value);
+          setStatus(
+            copyStatus,
+            copied ? "Manifest link copied. Paste it into Stremio to install." : "Copy failed, select the URL and copy it manually.",
+            copied ? "ok" : "error"
+          );
         } catch (error) {
-          setStatus(error.message || "Could not save the configuration.", "error");
+          setStatus(copyStatus, error.message || "Could not copy the manifest link.", "error");
         } finally {
-          saveBtn.disabled = false;
+          copyBtn.disabled = false;
         }
       });
+
+      Promise.all([
+        fetch("/api/catalogs").then((response) => (response.ok ? response.json() : Promise.reject())),
+        fetch("/api/config").then((response) => (response.ok ? response.json() : Promise.reject()))
+      ])
+        .then(([catalogs, config]) => {
+          savedGenres = Array.isArray(config.genres) ? config.genres : [];
+          renderGenres(Array.isArray(catalogs) ? catalogs : []);
+          refreshManifest();
+        })
+        .catch(() => {
+          genreList.innerHTML = "";
+          setStatus(copyStatus, "Could not load the configuration from the server.", "error");
+        });
     })();
   </script>
 </body>
