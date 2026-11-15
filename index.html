@@ -3,7 +3,7 @@
 
 <head>
   <title>MalluFlix</title>
-  <link rel="icon" id="icon" href="https://forzayt.github.io/assets/emoji.png" />
+  <link rel="icon" id="icon" href="https://forzayt.github.io/MalluFlix_stremio_addon/images/logo.jpg" />
   <link rel="stylesheet" type="text/css" href="css/app.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap"
     rel="stylesheet" />
@@ -11,7 +11,7 @@
     rel="stylesheet" />
 
 <!-- buy me a coffee widget -->
- <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="vishnus" data-description="Support me on Buy me a coffee!" data-message="Yoo Wasssssaaaaaaappp" data-color="#FF813F" data-position="left" data-x_margin="18" data-y_margin="18"></script>
+ <!-- <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="vishnus" data-description="Support me on Buy me a coffee!" data-message="Yoo Wasssssaaaaaaappp" data-color="#FF813F" data-position="left" data-x_margin="18" data-y_margin="18"></script> -->
 <!-- buy me a coffee widget ends  -->
 
 
@@ -36,15 +36,127 @@
 
 
   <div id="loaderScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-white">
-  <lottie-player
-    src="/loaders/The Morty Dance Loader.json"
-    background="transparent"
-    speed="1"
-    style="width: 620px; height: 620px;margin-top: 100px;"
-    loop
-    autoplay>
-  </lottie-player>
+  <div id="loaderStage" aria-hidden="true"
+    style="position: relative; width: min(620px, 92vw); height: min(620px, 92vw); margin-top: 100px;">
+  </div>
 </div>
+
+<script>
+  // Loops through the animations in /loaders, starting at a random one on every visit.
+  (() => {
+    const stage = document.getElementById("loaderStage");
+    const screen = document.getElementById("loaderScreen");
+    if (!stage || !screen) return;
+
+    // Used when the dynamic /loaders/index.json listing is unavailable (e.g. static hosting).
+    const FALLBACK_LOADERS = [
+      "Character Animation.json",
+      "Dancing Pumpkin Meme.json",
+      "laughing cat.json",
+      "loading.json",
+      "Material wave loading.json",
+      "Meme without BG.json",
+      "Tenor.json",
+      "The Morty Dance Loader.json",
+      "The Nyan Cat.json"
+    ];
+
+    const ROTATE_MS = 2500;
+    const FADE_MS = 350;
+    const READY_FALLBACK_MS = 1200;
+
+    const shuffle = (list) => {
+      const copy = list.slice();
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    };
+
+    const createPlayer = (file) => {
+      const player = document.createElement("lottie-player");
+      player.setAttribute("src", "/loaders/" + encodeURIComponent(file));
+      player.setAttribute("background", "transparent");
+      player.setAttribute("speed", "1");
+      player.setAttribute("loop", "");
+      player.setAttribute("autoplay", "");
+      player.style.cssText =
+        "position:absolute;inset:0;width:100%;height:100%;opacity:0;" +
+        "transition:opacity " + FADE_MS + "ms ease;";
+      return player;
+    };
+
+    let order = [];
+    let index = 0;
+    let active = null;
+    let timer = null;
+
+    const stop = () => {
+      if (timer) clearInterval(timer);
+      timer = null;
+      if (active) active.pause();
+    };
+
+    const advance = () => {
+      if (screen.classList.contains("hidden")) {
+        stop();
+        return;
+      }
+      if (!order.length) return;
+
+      const file = order[index % order.length];
+      index += 1;
+
+      const next = createPlayer(file);
+      let settled = false;
+      let readyTimeout = null;
+
+      const reveal = () => {
+        if (settled) return;
+        if (!next.isConnected) return; // failed to load, keep the current animation
+        settled = true;
+        clearTimeout(readyTimeout);
+        // Force a style flush so the opacity change transitions instead of jumping.
+        void next.offsetWidth;
+        next.style.opacity = "1";
+
+        const previous = active;
+        active = next;
+        if (previous) {
+          previous.style.opacity = "0";
+          setTimeout(() => {
+            previous.pause();
+            previous.remove();
+          }, FADE_MS + 50);
+        }
+      };
+
+      next.addEventListener("ready", reveal);
+      next.addEventListener("error", () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(readyTimeout);
+        next.remove();
+      });
+
+      stage.appendChild(next);
+      readyTimeout = setTimeout(reveal, READY_FALLBACK_MS);
+    };
+
+    const start = (files) => {
+      order = shuffle(files);
+      advance();
+      timer = setInterval(advance, ROTATE_MS);
+    };
+
+    fetch("/loaders/index.json")
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then((files) => (Array.isArray(files) && files.length ? files : FALLBACK_LOADERS))
+      .catch(() => FALLBACK_LOADERS)
+      .then(start);
+  })();
+</script>
 
 
   <section id="mainContent" class="opacity-0 relative w-full h-screen overflow-hidden bg-center bg-no-repeat bg-cover bg-patternTop">
