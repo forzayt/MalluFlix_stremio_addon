@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Configure MalluFlix</title>
+  <link rel="icon" id="icon" href="https://forzayt.github.io/assets/emoji.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      padding: 32px 20px;
+      background-color: #ffffff;
+      background-image: radial-gradient(circle at 50% 0%, #fffbe6 0%, #ffffff 60%);
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: #0f172a;
+    }
+
+    .back {
+      width: 100%;
+      max-width: 560px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: #64748b;
+      text-decoration: none;
+    }
+
+    .back:hover {
+      color: #0f172a;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 560px;
+      padding: 36px 32px;
+      border: 2px solid #0f172a;
+      border-radius: 26px;
+      background: #ffffff;
+      box-shadow: 10px 10px 0 #fdd835;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .subtitle {
+      margin: 0 0 28px;
+      font-size: 15px;
+      line-height: 1.6;
+      color: #64748b;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #475569;
+    }
+
+    input[type="url"] {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #0f172a;
+      border-radius: 14px;
+      font-family: inherit;
+      font-size: 15px;
+      color: #0f172a;
+      background: #ffffff;
+      outline: none;
+      transition: box-shadow 0.2s ease;
+    }
+
+    input[type="url"]::placeholder {
+      color: #94a3b8;
+    }
+
+    input[type="url"]:focus {
+      box-shadow: 0 0 0 4px rgba(253, 216, 53, 0.45);
+    }
+
+    .hint {
+      margin: 10px 0 26px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #94a3b8;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 12px 22px;
+      border: 2px solid #0f172a;
+      border-radius: 50px;
+      background-color: #fdd835;
+      color: #0f172a;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    button:hover:not(:disabled) {
+      box-shadow: 0 4px 0 #0f172a;
+      transform: translateY(-2px);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: progress;
+    }
+
+    #status {
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    #status.ok {
+      color: #15803d;
+    }
+
+    #status.error {
+      color: #b91c1c;
+    }
+  </style>
+</head>
+
+<body>
+  <a class="back" href="/">&larr; Back to MalluFlix</a>
+
+  <div class="card">
+    <h1>Configure</h1>
+    <p class="subtitle">
+      Set the stream URL used by the <strong>MalluFlix Direct Streams</strong> catalog.
+    </p>
+
+    <form id="configForm" novalidate>
+      <label for="streamUrl">Direct stream URL</label>
+      <input id="streamUrl" name="streamUrl" type="url" inputmode="url" autocomplete="off" spellcheck="false"
+        placeholder="https://example.com/movie.mkv" />
+      <p class="hint">Leave empty and save to disable the direct stream. Streams update immediately; if the
+        Direct Streams catalog was not visible before, restart the addon once.</p>
+
+      <div class="actions">
+        <button id="saveBtn" type="submit">Save</button>
+        <span id="status" role="status" aria-live="polite"></span>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    (() => {
+      const form = document.getElementById("configForm");
+      const input = document.getElementById("streamUrl");
+      const saveBtn = document.getElementById("saveBtn");
+      const status = document.getElementById("status");
+
+      const setStatus = (message, state) => {
+        status.textContent = message;
+        status.className = state || "";
+      };
+
+      fetch("/api/config")
+        .then((response) => (response.ok ? response.json() : Promise.reject()))
+        .then((config) => {
+          input.value = typeof config.url === "string" ? config.url : "";
+        })
+        .catch(() => setStatus("Could not load the current configuration.", "error"));
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const url = input.value.trim();
+
+        if (url && !/^https?:\/\//i.test(url)) {
+          setStatus("The URL must start with http:// or https://", "error");
+          return;
+        }
+
+        saveBtn.disabled = true;
+        setStatus("Saving…");
+
+        try {
+          const response = await fetch("/api/config", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url })
+          });
+          const result = await response.json().catch(() => ({}));
+
+          if (!response.ok) {
+            throw new Error(result.error || "Could not save the configuration.");
+          }
+
+          input.value = result.url || "";
+          setStatus(result.url ? "Saved. The direct stream is now live." : "Saved. Direct stream disabled.", "ok");
+        } catch (error) {
+          setStatus(error.message || "Could not save the configuration.", "error");
+        } finally {
+          saveBtn.disabled = false;
+        }
+      });
+    })();
+  </script>
+</body>
+
+</html>

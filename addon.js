@@ -25,16 +25,25 @@ const GENRES = {
 
 // Check if urls.json has a valid URL
 const urlsPath = path.join(__dirname, "urls.json");
-let urlsData = {};
-try {
-    if (fs.existsSync(urlsPath)) {
-        urlsData = JSON.parse(fs.readFileSync(urlsPath, "utf8"));
+
+function readUrls() {
+    try {
+        if (!fs.existsSync(urlsPath)) return {};
+        const data = JSON.parse(fs.readFileSync(urlsPath, "utf8"));
+        return data && typeof data === "object" ? data : {};
+    } catch (e) {
+        console.error("Error reading urls.json", e);
+        return {};
     }
-} catch (e) {
-    console.error("Error reading urls.json", e);
 }
 
-const hasUrl = urlsData && urlsData.url && urlsData.url.trim() !== "";
+// Read on every request so changes from /configure apply without a restart
+function getStreamUrl() {
+    const url = readUrls().url;
+    return typeof url === "string" ? url.trim() : "";
+}
+
+const hasUrl = getStreamUrl() !== "";
 
 const manifest = {
     id: "org.mallu.flix",
@@ -118,7 +127,7 @@ async function tmdbToImdb(tmdbId) {
 /* Malayalam Catalog */
 builder.defineCatalogHandler(async ({ type, id, extra }) => {
     if (id === "malluflix_streams") {
-        if (!hasUrl) return { metas: [] };
+        if (!getStreamUrl()) return { metas: [] };
         return {
             metas: [{
                 id: "malluflix_direct_stream",
@@ -231,11 +240,12 @@ builder.defineMetaHandler(async ({ type, id }) => {
 builder.defineStreamHandler(async ({ type, id }) => {
     if (type !== "movie" || id !== "malluflix_direct_stream") return { streams: [] };
 
-    if (hasUrl) {
+    const url = getStreamUrl();
+    if (url) {
         return {
             streams: [{
                 title: "MalluFlix Direct Stream",
-                url: urlsData.url
+                url
             }]
         };
     }
