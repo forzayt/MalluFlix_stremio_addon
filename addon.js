@@ -52,7 +52,7 @@ const BASE_CATALOG_DEFS = [
             type: "movie",
             id: "malluflix_catalog",
             name: "MalluFlix New Releases",
-            extra: [{ name: "search" }, { name: "skip" }]
+            extra: [{ name: "skip" }]
         }
     },
     {
@@ -61,7 +61,7 @@ const BASE_CATALOG_DEFS = [
             type: "movie",
             id: "malluflix_ott",
             name: "MalluFlix OTT Released",
-            extra: [{ name: "search" }, { name: "skip" }]
+            extra: [{ name: "skip" }]
         }
     },
     {
@@ -70,7 +70,7 @@ const BASE_CATALOG_DEFS = [
             type: "movie",
             id: "malluflix_future",
             name: "MalluFlix Future Releases",
-            extra: [{ name: "search" }, { name: "skip" }]
+            extra: [{ name: "skip" }]
         }
     }
 ];
@@ -88,7 +88,7 @@ const STREAMS_CATALOG = {
     type: "movie",
     id: "malluflix_streams",
     name: "MalluFlix Direct Streams",
-    extra: [{ name: "search" }, { name: "skip" }]
+    extra: [{ name: "skip" }]
 };
 
 function genreCatalog(name) {
@@ -96,7 +96,7 @@ function genreCatalog(name) {
         type: "movie",
         id: `malluflix_genre_${name.toLowerCase().replace(/\s+/g, '_')}`,
         name: `MalluFlix ${name}`,
-        extra: [{ name: "search" }, { name: "skip" }]
+        extra: [{ name: "skip" }]
     };
 }
 
