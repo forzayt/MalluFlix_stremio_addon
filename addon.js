@@ -124,11 +124,17 @@ function buildManifest(catalogNames) {
 
     return {
         id: "org.mallu.flix",
-        version: "3.0.0",
+        version: "3.1.0",
         name: "MalluFlix",
         description: "Malayalam movie catalog using TMDB discovery + Cinemeta compatibility",
         logo: "https://forzayt.github.io/MalluFlix_stremio_addon/images/logo.jpg",
-        resources: ["catalog", "meta", "stream"],
+        // Scope each resource by type so Stremio keeps using Cinemeta for series
+        // metadata while asking this addon for series streams
+        resources: [
+            { name: "catalog", types: ["movie"] },
+            { name: "meta", types: ["movie"] },
+            { name: "stream", types: ["movie", "series"] }
+        ],
         types: ["movie", "series"],
         catalogs,
         idPrefixes: ["tt", "malluflix_"]
