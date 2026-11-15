@@ -2,6 +2,7 @@ const { addonBuilder } = require("stremio-addon-sdk");
 const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
+const sources = require("./sources");
 
 const TMDB_KEY = "b8e31efed6de570178942a39601e84b0";
 
@@ -128,7 +129,7 @@ function buildManifest(catalogNames) {
         description: "Malayalam movie catalog using TMDB discovery + Cinemeta compatibility",
         logo: "https://forzayt.github.io/MalluFlix_stremio_addon/images/logo.jpg",
         resources: ["catalog", "meta", "stream"],
-        types: ["movie"],
+        types: ["movie", "series"],
         catalogs,
         idPrefixes: ["tt", "malluflix_"]
     };
@@ -286,19 +287,32 @@ builder.defineMetaHandler(async ({ type, id }) => {
 
 /* Stream Handler */
 builder.defineStreamHandler(async ({ type, id }) => {
-    if (type !== "movie" || id !== "malluflix_direct_stream") return { streams: [] };
+    if (!id) return { streams: [] };
 
-    const url = getStreamUrl();
-    if (url) {
-        return {
-            streams: [{
-                title: "MalluFlix Direct Stream",
-                url
-            }]
-        };
+    const streams = [];
+
+    // Optional direct stream configured in /configure
+    if (type === "movie" && id === "malluflix_direct_stream") {
+        const url = getStreamUrl();
+        if (url) streams.push({ title: "MalluFlix Direct Stream", url });
+        return { streams };
     }
 
-    return { streams: [] };
+    // Sources provide streams for every title, not just the MalluFlix catalogs
+    const results = await Promise.all(sources.map(async (source) => {
+        try {
+            return await source.getStreams({ type, id });
+        } catch (err) {
+            console.error(`Stream source "${source.id}" failed for ${type} ${id}:`, err.message);
+            return [];
+        }
+    }));
+
+    for (const result of results) {
+        if (Array.isArray(result)) streams.push(...result);
+    }
+
+    return { streams };
 });
 
 const addonInterface = builder.getInterface();
