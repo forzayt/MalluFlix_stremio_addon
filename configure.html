@@ -165,6 +165,40 @@
       cursor: pointer;
     }
 
+    .sources {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .source {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 13px;
+    }
+
+    .source strong {
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    .source span {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .source-count {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: #94a3b8;
+    }
+
     input[type="text"] {
       width: 100%;
       padding: 14px 16px;
@@ -296,6 +330,19 @@
         <span id="copyStatus" class="status" role="status" aria-live="polite"></span>
       </div>
     </div>
+
+    <div class="section">
+      <div class="section-head">
+        <label class="title">Stream sources</label>
+        <span id="sourceCount" class="source-count"></span>
+      </div>
+      <div id="sourceList" class="sources">
+        <span class="hint">Loading sources…</span>
+      </div>
+      <p class="hint">
+        These return streams for every movie and series in Stremio, not only the catalogs above.
+      </p>
+    </div>
   </div>
 
   <script>
@@ -304,6 +351,8 @@
       const manifestInput = document.getElementById("manifestUrl");
       const copyBtn = document.getElementById("copyManifest");
       const copyStatus = document.getElementById("copyStatus");
+      const sourceList = document.getElementById("sourceList");
+      const sourceCount = document.getElementById("sourceCount");
 
       let savedGenres = [];
 
@@ -478,13 +527,39 @@
         }
       });
 
+      const renderSources = (sources) => {
+        const list = Array.isArray(sources) ? sources : [];
+        sourceList.innerHTML = "";
+        sourceCount.textContent = list.length + (list.length === 1 ? " source" : " sources");
+
+        list.forEach((source) => {
+          const row = document.createElement("div");
+          row.className = "source";
+
+          const name = document.createElement("strong");
+          name.textContent = source.name;
+
+          const host = document.createElement("span");
+          try {
+            host.textContent = new URL(source.movie || source.series).host;
+          } catch (error) {
+            host.textContent = source.movie || source.series || "";
+          }
+
+          row.append(name, host);
+          sourceList.append(row);
+        });
+      };
+
       Promise.all([
         fetch("/api/catalogs").then((response) => (response.ok ? response.json() : Promise.reject())),
+        fetch("/api/sources").then((response) => (response.ok ? response.json() : Promise.reject())),
         fetch("/api/config").then((response) => (response.ok ? response.json() : Promise.reject()))
       ])
-        .then(([catalogs, config]) => {
+        .then(([catalogs, sources, config]) => {
           savedGenres = Array.isArray(config.genres) ? config.genres : [];
           renderGenres(Array.isArray(catalogs) ? catalogs : []);
+          renderSources(sources);
           refreshManifest();
         })
         .catch(() => {

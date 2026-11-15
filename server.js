@@ -1,6 +1,7 @@
 const express = require("express");
 const { getRouter } = require("stremio-addon-sdk");
 const addonInterface = require("./addon");
+const streamSources = require("./sources");
 const path = require("path");
 const fs = require("fs");
 
@@ -89,6 +90,16 @@ app.get("/configure", (req, res) => {
 
 app.get("/api/catalogs", (req, res) => {
     res.json(CATALOG_NAMES);
+});
+
+// Every stream source that answers for all titles, not just the catalogs
+app.get("/api/sources", (req, res) => {
+    res.json(streamSources.map((source) => ({
+        id: source.id,
+        name: source.name,
+        movie: source.hosts.movie,
+        series: source.hosts.series
+    })));
 });
 
 app.get("/api/config", (req, res) => {
